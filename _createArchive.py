@@ -9,37 +9,20 @@ if not os.path.exists(os.path.dirname(tempFile)):
 	os.mkdir(os.path.dirname(tempFile))
 	
 def ArchiveBeforeRender(args=None):
-	global log
-	log += 'ArchiveBeforeRender\n'
-	
-	
 	nodee = args
-
 	if not nodee: 
 		aNode = nuke.selectedNode()
-	
 	else: 
-		
 		aNode = nodee
-
-	
-
 	allK = nuke.Node.knobs(aNode)
 	available = allK.get('ArchiveButton')
 	if available is None:
 		return
-	
 	if nuke.Boolean_Knob.value(available) == True:
-		print "archiveBeforeRender: archiving is turned on for node ", aNode.name()
-
 		createArchive(aNode)
 		nodee = None
-
 	elif nuke.Boolean_Knob.value(available) == False:
-		print "Archive not created"
-		
-	with open(tempFile, 'w') as f:
-		f.write(log)
+		pass
 
 def removeExtraCallBacks():
     
@@ -138,8 +121,6 @@ nuke.message('Archive created')
 '''
 
 def modifyWrite():
-	global log
-	log += 'modifyWrite\n'
 	n = nuke.thisNode()
 
 	knobName1 = 'ArchiveButtonPy'
@@ -159,23 +140,14 @@ def modifyWrite():
 			
 		
 def setupNuke():
-
-	
 	nuke.addOnCreate(modifyWrite, nodeClass='Write')
+	values = nuke.callbacks.beforeRenders.values()
+	if values:
+		if len(values[0][0]) > 1:
+			return
 	nuke.callbacks.addBeforeRender(ArchiveBeforeRender, nodeClass='Write')
-	global log
-	log += 'setupNuke called\n'
-	with open(tempFile, 'w') as f:
-		f.write(log)
-
 
 def createArchive(args=None):
-	
-	global log
-	log += 'createArchive'
-	with open(tempFile, 'w') as f:
-		f.write(log)
-	
 	
 	s = ""
 	nodee = args
@@ -238,12 +210,9 @@ def createArchive(args=None):
 		newName = 'Archive_' + str(sname).zfill(4)
 		dest = os.path.join(s,newName)
 		os.mkdir(dest)
-		print 'archive dir created', newName
 
 
 		# moving all files in that directory
-
-	print "moving all files..."
 	
 	file = []		
 
@@ -266,4 +235,3 @@ def createArchive(args=None):
 				os.remove(src) 
 	
 	nodee = None
-	removeExtraCallBacks()
