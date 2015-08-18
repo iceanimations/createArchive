@@ -143,7 +143,7 @@ def setupNuke():
 	nuke.addOnCreate(modifyWrite, nodeClass='Write')
 	values = nuke.callbacks.beforeRenders.values()
 	if values:
-		if len(values[0][0]) > 1:
+		if len(values[0]) > 0:
 			return
 	nuke.callbacks.addBeforeRender(ArchiveBeforeRender, nodeClass='Write')
 
