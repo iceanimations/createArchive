@@ -50,11 +50,6 @@ import sys
 import shutil
 import time
 
-n = nuke.selectedNode()
-s = n.knob('file').getValue()
-if s:
-	s = os.path.dirname(s).replace('/', '\\\\')
-
 def copyFile(srcc, destt):
 	try:
 		shutil.copyfile(srcc, destt)
@@ -65,59 +60,76 @@ def copyFile(srcc, destt):
 	except IOError as e:
 		print('Error: %s' % e.strerror)
 
-# creating the directory here	
-
-# checking for present archives 
-archive_dir = []
-for d in os.listdir(s):
-	dirc = os.path.join(s,d)
-	if os.path.isdir(dirc) and d[:7] == 'Archive':
-		archive_dir.append(d)
-
-
-default_directory = 'Archive_0001'
-
-	#in case of no present archives create a new one 
-if not archive_dir:
-	dirname = default_directory
-	dest = os.path.join(s,dirname)
-	os.mkdir(dest)
-  
-  
-	#else proceed to create archives 
-
+s = ""
+nodee = None
+nn = nuke.selectedNode()
+if not nodee: 
+	n = nuke.selectedNode()
+	s = n.knob('file').getValue() 
+	if s:
+		s = os.path.dirname(s).replace('/', '\\\\')
+	
 else: 
 	
-	archive_dir.sort()
-	dirname = archive_dir[len(archive_dir) - 1]
-	dirname = dirname[8:]
-	sname = int(dirname) + 1
-	newName = 'Archive_' + str(sname).zfill(4)
-	dest = os.path.join(s,newName)
-	os.mkdir(dest)
-	print 'file created'
-	
-	
-	
-	# moving all files in that directory
-print "moving all files..."
+	s = nodee.knob('file').getValue() 
+	if s:
+		s = os.path.dirname(s).replace('/', '\\\\')
 
-file = []		
-for f in os.listdir(s):
-		src = os.path.join(s,f)
+# creating the directory here	
+if s and os.path.exists(s):
+	if os.listdir(s):
+		# checking for present archives 
+		archive_dir = []
+		for d in os.listdir(s):
+			dirc = os.path.join(s,d)
+			if os.path.isdir(dirc) and d[:7] == 'Archive':
+				archive_dir.append(d)
 		
-		if os.path.isfile(src) and (f.endswith('.png') or f.endswith('.jpg')):
+		
+		default_directory = 'Archive_0001'
+		
+		
+		#in case of no present archives create a new one 
+		if not archive_dir:
+		
+			dirname = default_directory
+			dest = os.path.join(s,dirname)
+			os.mkdir(dest)
+		 	print 'file created'
+		 
+			#else proceed to create archives 
+		
+		
+		else: 
+			#print archive_dir
+			archive_dir.sort()
+			#print archive_dir
+			dirname = archive_dir[-1]
+			dirname = dirname[8:]
+			sname = int(dirname) + 1
+			newName = 'Archive_' + str(sname).zfill(4)
+			dest = os.path.join(s,newName)
+			os.mkdir(dest)
+		
+		
+			# moving all files in that directory
+		
+		for f in os.listdir(s):
+			src = os.path.join(s,f)
+			#print src
+			if os.path.isfile(src):
 				d = os.path.join(dest,f)
-
-		copyFile(src,d) #we later have to change it to move
-		file.append(f)
-	#time.sleep(2)
-for f in os.listdir(s):
-		src = os.path.join(s,f)
-		if os.path.isfile(src) and (f.endswith('.png') or f.endswith('.jpg')):
-			os.remove(src) 
-
-nuke.message('Archive created')
+				copyFile(src,d)
+		
+		print "File copied to the arcive directory"
+		
+		
+		for f in os.listdir(s):
+			src = os.path.join(s,f)
+			if os.path.isfile(src) and (f.endswith('.png') or f.endswith('.jpg')):
+				os.remove(src) 
+		
+		nodee = None
 '''
 
 def modifyWrite():
@@ -142,10 +154,18 @@ def modifyWrite():
 def setupNuke():
 	nuke.addOnCreate(modifyWrite, nodeClass='Write')
 	values = nuke.callbacks.beforeRenders.values()
-	if values:
-		if len(values[0]) > 0:
-			return
-	nuke.callbacks.addBeforeRender(ArchiveBeforeRender, nodeClass='Write')
+	if not values:
+		nuke.callbacks.addBeforeRender(ArchiveBeforeRender, nodeClass='Write')
+	
+def copyFile(srcc, destt):
+	try:
+		shutil.copyfile(srcc, destt)
+	# eg. src and dest are the same file
+	except shutil.Error as e:
+		print('Error: %s' % e)
+	# eg. source or destination doesn't exist
+	except IOError as e:
+		print('Error: %s' % e.strerror)
 
 def createArchive(args=None):
 	
@@ -163,21 +183,10 @@ def createArchive(args=None):
 		s = nodee.knob('file').getValue() 
 		if s:
 			s = os.path.dirname(s).replace('/', '\\\\')
-	
-	
-	
-	def copyFile(srcc, destt):
-		try:
-			shutil.copyfile(srcc, destt)
-		# eg. src and dest are the same file
-		except shutil.Error as e:
-			print('Error: %s' % e)
-		# eg. source or destination doesn't exist
-		except IOError as e:
-			print('Error: %s' % e.strerror)
 
 	# creating the directory here	
-	
+	if not s or not os.path.exists(s): return
+	if not os.listdir(s): return
 	# checking for present archives 
 	archive_dir = []
 	for d in os.listdir(s):
@@ -213,18 +222,13 @@ def createArchive(args=None):
 
 
 		# moving all files in that directory
-	
-	file = []		
 
 	for f in os.listdir(s):
-			src = os.path.join(s,f)
-			#print src
-			if os.path.isfile(src) and (f.endswith('.png') or f.endswith('.jpg')):
-					d = os.path.join(dest,f)
-		#print dest
-		#try: 
-			copyFile(src,d) 
-			file.append(f)
+		src = os.path.join(s,f)
+		#print src
+		if os.path.isfile(src):
+				d = os.path.join(dest,f)
+				copyFile(src,d)
 
 	print "File copied to the arcive directory"
 
